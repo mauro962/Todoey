@@ -13,28 +13,19 @@ class TodoListViewController: UITableViewController {
     
     //var itemArray = ["Find Mike", "Buy Eggs", "Destroy", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
     var itemArray = [Item]()
-       
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    //let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
+       
         
-        let newItem2 = Item()
-        newItem2.title = "Buy Eggs"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Destroy"
-        itemArray.append(newItem3)
+        print(dataFilePath)
         
         
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
+               
+    loadItems()
         
        
     }
@@ -69,7 +60,7 @@ class TodoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        tableView.reloadData()
+        saveItems()
         
         tableView.deselectRow(at: indexPath, animated: true)
         
@@ -94,9 +85,8 @@ class TodoListViewController: UITableViewController {
             
             self.itemArray.append(newItem)
             
-          self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            self.saveItems()
             
-          self.tableView.reloadData()
         }
         
         alert.addTextField { (alertTextField) in
@@ -109,6 +99,63 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
         
     }
+    
+    
+    //MARK - Model manipulation methods
+    
+    func saveItems() {
+        
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("error encoding item array, \(error)")
+        }
+        
+        self.tableView.reloadData()
+        
+    }
+        
+    
+    func loadItems() {
+        
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            // try? means: do it if it's not an optional.
+            let decoder = PropertyListDecoder()
+            do {
+           itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("error decoding item array, \(error)")
+            }
+        }
+    }
+    
+    
+    // [Item].self syntax explanation:
+    
+//    Initially, We created an instance of [Item] with: itemArray = [Item]()
+//
+//    So now, the datatype of itemArray is [Item]
+//
+//    Decode needs to know the datatype of the object it’s working with.
+//    Simply writing [Item] would be ambiguous. Did you mean an instance or the datatype itself?
+//    So, to refer to the datatype, we write [Item].self.
+
+    
+//    Optional Binding:
+//    if let data = try? Data(contentsOf: dataFilePath!)
+//
+//    Data(contentsOf: dataFilePath!)  Gets the contents of a file at dataFilePath
+//    and returns it as optional Data?  (actually a buffer area that can be nil)
+//
+//    try? is needed because the file might not be there (or some other error)
+//
+//    if let data  unwraps returned Data?  value if it is not nil.
+    
+    
+    
 }
 
 
